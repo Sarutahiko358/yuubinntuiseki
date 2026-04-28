@@ -1,5 +1,12 @@
-const CACHE = 'tracking-app-v2';
-const ASSETS = ['./', './index.html', './manifest.json'];
+const CACHE = 'tracking-app-v3';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.svg',
+  './icon-512.svg',
+  './icon-maskable.svg'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
