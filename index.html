@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2563eb">
+<title>荷物追跡アプリ</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+    background: #f3f4f6;
+    color: #1f2937;
+    min-height: 100vh;
+    padding: 16px;
+    line-height: 1.6;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #111827; color: #e5e7eb; }
+    .card { background: #1f2937 !important; }
+    input, select { background: #374151 !important; color: #e5e7eb !important; border-color: #4b5563 !important; }
+    .item { background: #374151 !important; }
+    .muted { color: #9ca3af !important; }
+    .notice { background: #1e3a8a !important; color: #dbeafe !important; border-color: #3b82f6 !important; }
+    .notice-warn { background: #78350f !important; color: #fef3c7 !important; border-color: #f59e0b !important; }
+    .modal-content { background: #1f2937 !important; }
+  }
+  .container { max-width: 600px; margin: 0 auto; }
+  header {
+    text-align: center;
+    padding: 16px 0 20px;
+  }
+  header h1 { font-size: 1.5rem; }
+  header p { font-size: 0.85rem; color: #6b7280; margin-top: 4px; }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  /* 注意書きスタイル */
+  .notice {
+    background: #eff6ff;
+    color: #1e40af;
+    border-left: 4px solid #2563eb;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .notice strong { display: block; margin-bottom: 4px; }
+  .notice-warn {
+    background: #fffbeb;
+    color: #78350f;
+    border-left-color: #f59e0b;
+  }
+  .notice-inline {
+    font-size: 0.8rem;
+    color: #6b7280;
+    background: #f9fafb;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  @media (prefers-color-scheme: dark) {
+    .notice-inline { background: #374151 !important; color: #d1d5db !important; }
+  }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+  input, select {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    margin-bottom: 12px;
+  }
+  input:focus, select:focus { outline: 2px solid #2563eb; border-color: #2563eb; }
+  button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background: #2563eb;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  button:hover { background: #1d4ed8; }
+  button.secondary { background: #6b7280; }
+  button.secondary:hover { background: #4b5563; }
+  button.danger { background: #dc2626; padding: 6px 10px; font-size: 0.8rem; width: auto; }
+  .detected {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    background: #eff6ff;
+    color: #1e40af;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    .detected { background: #1e3a8a; color: #dbeafe; }
+  }
+  .detected.show { display: block; }
+  h2 { font-size: 1.1rem; margin-bottom: 12px; }
+  .item {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-weight: 600; margin-bottom: 2px; word-break: break-all; }
+  .item-no { font-size: 0.85rem; color: #6b7280; word-break: break-all; }
+  .item-carrier {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #2563eb;
+    color: #fff;
+    margin-right: 6px;
+  }
+  .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .item-actions button { padding: 6px 10px; font-size: 0.8rem; width: auto; }
+  .empty { text-align: center; color: #9ca3af; padding: 24px 0; font-size: 0.9rem; }
+  .muted { color: #6b7280; font-size: 0.8rem; }
+  footer {
+    margin-top: 24px;
+    padding: 16px;
+    background: #fff;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    color: #6b7280;
+    line-height: 1.7;
+  }
+  @media (prefers-color-scheme: dark) {
+    footer { background: #1f2937; color: #9ca3af; }
+  }
+  footer h3 { font-size: 0.85rem; color: #374151; margin-bottom: 6px; }
+  @media (prefers-color-scheme: dark) {
+    footer h3 { color: #e5e7eb; }
+  }
+  footer ul { margin-left: 18px; margin-bottom: 8px; }
+  footer li { margin-bottom: 2px; }
+  /* モーダル */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-content {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-content h2 { margin-bottom: 12px; }
+  .modal-content p { font-size: 0.9rem; margin-bottom: 12px; line-height: 1.6; }
+  .modal-content ul { margin-left: 18px; margin-bottom: 12px; font-size: 0.9rem; }
+  .modal-content li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📦 荷物追跡</h1>
+    <p>追跡番号から各運送会社の追跡ページを開きます</p>
+  </header>
+
+  <!-- 全体の注意書き -->
+  <div class="notice">
+    <strong>ℹ️ このアプリについて</strong>
+    追跡ボタンを押すと、各運送会社の<strong>公式追跡ページが新しいタブで開きます</strong>。
+    配送状況の最新情報は各社の公式サイトでご確認ください。
+    本アプリは公式の追跡ページへのリンクを生成するツールです。
+  </div>
+
+  <div class="card">
+    <label for="trackNo">追跡番号</label>
+    <input type="text" id="trackNo" placeholder="例: 1234-5678-9012" autocomplete="off" inputmode="numeric">
+
+    <div id="detected" class="detected"></div>
+
+    <label for="carrier">配送業者</label>
+    <select id="carrier">
+      <option value="auto">自動判定</option>
+      <option value="japanpost">日本郵便（ゆうパック・ゆうパケット等）</option>
+      <option value="yamato">ヤマト運輸（クロネコヤマト）</option>
+      <option value="sagawa">佐川急便</option>
+      <option value="seino">西濃運輸（カンガルー便）</option>
+      <option value="fukutsu">福山通運</option>
+      <option value="ems">EMS・国際郵便</option>
+    </select>
+
+    <label for="memo">荷物名（任意）</label>
+    <input type="text" id="memo" placeholder="例: Amazonの本" autocomplete="off">
+
+    <div class="notice-inline">
+      🔗 ボタンを押すと運送会社の公式サイトへ移動します
+    </div>
+
+    <button onclick="track()">追跡する</button>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h2>履歴</h2>
+      <button class="danger" onclick="clearHistory()" id="clearBtn" style="display:none;">全削除</button>
+    </div>
+    <div class="notice-inline" id="historyNotice" style="display:none;">
+      「追跡」ボタンで運送会社の公式サイトを再度開きます
+    </div>
+    <div id="history"></div>
+  </div>
+
+  <footer>
+    <h3>📋 ご利用にあたって</h3>
+    <ul>
+      <li>このアプリは、各運送会社の<strong>公式追跡ページへのリンクを作成するだけ</strong>のツールです。</li>
+      <li>「追跡する」ボタンを押すと、運送会社の公式サイトが新しいタブで開きます。</li>
+      <li>配送状況の表示・更新は各運送会社のサイトで行われます。本アプリは情報を保持・解析しません。</li>
+      <li>追跡番号と荷物名はお使いの<strong>端末内（ブラウザ）にのみ保存</strong>され、外部には送信されません。</li>
+      <li>各社サイトのURL仕様変更により、追跡ページが正しく開かない場合があります。</li>
+    </ul>
+    <h3 style="margin-top:12px;">🏢 対応運送会社（公式サイト）</h3>
+    <ul>
+      <li>日本郵便 / ヤマト運輸 / 佐川急便 / 西濃運輸 / 福山通運 / EMS（国際郵便）</li>
+    </ul>
+    <p style="margin-top:12px; text-align:center;">
+      <a href="#" onclick="showAbout(); return false;" style="color:#2563eb;">このアプリについて詳しく</a>
+    </p>
+  </footer>
+</div>
+
+<!-- 初回起動・詳細説明モーダル -->
+<div class="modal-overlay" id="aboutModal">
+  <div class="modal-content">
+    <h2>📦 荷物追跡アプリへようこそ</h2>
+    <p>このアプリは、追跡番号を入力するだけで各運送会社の公式追跡ページをすばやく開けるシンプルなツールです。</p>
+
+    <h3 style="font-size:0.95rem; margin-bottom:6px;">使い方</h3>
+    <ul>
+      <li>追跡番号を入力（業者は自動判定されます）</li>
+      <li>「追跡する」ボタンをタップ</li>
+      <li>各運送会社の公式サイトが新しいタブで開きます</li>
+      <li>入力した番号は履歴に保存されるので、後から再表示できます</li>
+    </ul>
+
+    <h3 style="font-size:0.95rem; margin-bottom:6px; margin-top:12px;">大事なお知らせ</h3>
+    <ul>
+      <li>配送状況の確認は<strong>各運送会社の公式サイトで</strong>行います</li>
+      <li>本アプリは追跡情報を取得・保存しません</li>
+      <li>履歴データはご自身の端末内にのみ保存されます</li>
+    </ul>
+
+    <button onclick="closeAbout()" style="margin-top:8px;">了解しました</button>
+  </div>
+</div>
+
+<script>
+// ===== 配送業者の追跡URL定義 =====
+const CARRIERS = {
+  japanpost: {
+    name: '日本郵便',
+    url: no => `https://trackings.post.japanpost.jp/services/srv/search/direct?locale=ja&reqCodeNo1=${encodeURIComponent(no)}`
+  },
+  yamato: {
+    name: 'ヤマト運輸',
+    url: no => `https://toi.kuronekoyamato.co.jp/cgi-bin/tneko?init=yes&number00=1&number01=${encodeURIComponent(no)}`
+  },
+  sagawa: {
+    name: '佐川急便',
+    url: no => `https://k2k.sagawa-exp.co.jp/p/web/okurijosearch.do?okurijoNo=${encodeURIComponent(no)}`
+  },
+  seino: {
+    name: '西濃運輸',
+    url: no => `https://track.seino.co.jp/kamotsu/GempyoNoShokai.do?GNO=${encodeURIComponent(no)}`
+  },
+  fukutsu: {
+    name: '福山通運',
+    url: no => `https://corp.fukutsu.co.jp/situation/tracking_no_hunt/${encodeURIComponent(no)}`
+  },
+  ems: {
+    name: 'EMS・国際郵便',
+    url: no => `https://trackings.post.japanpost.jp/services/srv/search/direct?locale=ja&reqCodeNo1=${encodeURIComponent(no)}`
+  }
+};
+
+// ===== 追跡番号から業者を自動判定 =====
+function detectCarrier(no) {
+  const s = no.replace(/[\s-]/g, '').toUpperCase();
+  if (/^[A-Z]{2}\d{9}[A-Z]{2}$/.test(s)) return 'ems';
+  if (/^\d{12}$/.test(s)) return 'japanpost';
+  if (/^\d{11}$/.test(s)) return 'yamato';
+  if (/^\d{10}$/.test(s)) return 'sagawa';
+  if (/^\d{8}$/.test(s)) return 'seino';
+  return null;
+}
+
+// ===== 入力時に自動判定を表示 =====
+const trackInput = document.getElementById('trackNo');
+const detectedDiv = document.getElementById('detected');
+trackInput.addEventListener('input', () => {
+  const no = trackInput.value.trim();
+  if (!no) {
+    detectedDiv.classList.remove('show');
+    return;
+  }
+  const c = detectCarrier(no);
+  if (c) {
+    detectedDiv.textContent = `🔍 自動判定: ${CARRIERS[c].name}`;
+    detectedDiv.classList.add('show');
+  } else {
+    detectedDiv.textContent = '⚠️ 自動判定できません。業者を選択してください';
+    detectedDiv.classList.add('show');
+  }
+});
+
+// ===== 追跡実行 =====
+function track() {
+  const no = document.getElementById('trackNo').value.trim().replace(/[\s-]/g, '');
+  let carrier = document.getElementById('carrier').value;
+  const memo = document.getElementById('memo').value.trim();
+
+  if (!no) {
+    alert('追跡番号を入力してください');
+    return;
+  }
+
+  if (carrier === 'auto') {
+    carrier = detectCarrier(no);
+    if (!carrier) {
+      alert('追跡番号から業者を判定できませんでした。配送業者を手動で選択してください。');
+      return;
+    }
+  }
+
+  saveHistory({ no, carrier, memo, date: new Date().toISOString() });
+
+  const url = CARRIERS[carrier].url(no);
+  window.open(url, '_blank', 'noopener');
+
+  document.getElementById('trackNo').value = '';
+  document.getElementById('memo').value = '';
+  document.getElementById('carrier').value = 'auto';
+  detectedDiv.classList.remove('show');
+  renderHistory();
+}
+
+// ===== 履歴管理（localStorage） =====
+const STORAGE_KEY = 'tracking_history_v1';
+
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch { return []; }
+}
+
+function saveHistory(item) {
+  const list = loadHistory();
+  const filtered = list.filter(x => x.no !== item.no);
+  filtered.unshift(item);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered.slice(0, 50)));
+}
+
+function deleteHistory(no) {
+  const list = loadHistory().filter(x => x.no !== no);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  renderHistory();
+}
+
+function clearHistory() {
+  if (!confirm('履歴をすべて削除しますか？')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  renderHistory();
+}
+
+function reopenTrack(no, carrier) {
+  const url = CARRIERS[carrier].url(no);
+  window.open(url, '_blank', 'noopener');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[<>&"']/g, c =>
+    ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])
+  );
+}
+
+function renderHistory() {
+  const list = loadHistory();
+  const div = document.getElementById('history');
+  const clearBtn = document.getElementById('clearBtn');
+  const notice = document.getElementById('historyNotice');
+
+  if (list.length === 0) {
+    div.innerHTML = '<div class="empty">追跡履歴はまだありません</div>';
+    clearBtn.style.display = 'none';
+    notice.style.display = 'none';
+    return;
+  }
+
+  clearBtn.style.display = 'block';
+  notice.style.display = 'block';
+  div.innerHTML = list.map(item => {
+    const carrierName = CARRIERS[item.carrier]?.name || '不明';
+    const dateStr = new Date(item.date).toLocaleString('ja-JP', {
+      month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const safeName = escapeHtml(item.memo || '(名前なし)');
+    const safeNo = escapeHtml(item.no);
+    return `
+      <div class="item">
+        <div class="item-info">
+          <div class="item-name">${safeName}</div>
+          <div class="item-no">
+            <span class="item-carrier">${carrierName}</span>${safeNo}
+          </div>
+          <div class="muted">${dateStr}</div>
+        </div>
+        <div class="item-actions">
+          <button onclick="reopenTrack('${safeNo}','${item.carrier}')">追跡</button>
+          <button class="danger" onclick="deleteHistory('${safeNo}')">削除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== 初回起動時の説明モーダル =====
+const ABOUT_KEY = 'tracking_about_shown_v1';
+
+function showAbout() {
+  document.getElementById('aboutModal').classList.add('show');
+}
+
+function closeAbout() {
+  document.getElementById('aboutModal').classList.remove('show');
+  localStorage.setItem(ABOUT_KEY, '1');
+}
+
+// 初回起動時のみ自動表示
+if (!localStorage.getItem(ABOUT_KEY)) {
+  setTimeout(showAbout, 300);
+}
+
+renderHistory();
+
+// ===== PWA Service Worker =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
