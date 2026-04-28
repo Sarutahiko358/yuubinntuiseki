@@ -7,6 +7,9 @@
 <title>荷物追跡アプリ</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%232563eb' rx='20'/><text x='50' y='70' font-size='60' text-anchor='middle'>📦</text></svg>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="荷物追跡">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -20,12 +23,12 @@
   @media (prefers-color-scheme: dark) {
     body { background: #111827; color: #e5e7eb; }
     .card { background: #1f2937 !important; }
-    input, select { background: #374151 !important; color: #e5e7eb !important; border-color: #4b5563 !important; }
+    input, select, textarea { background: #374151 !important; color: #e5e7eb !important; border-color: #4b5563 !important; }
     .item { background: #374151 !important; }
     .muted { color: #9ca3af !important; }
     .notice { background: #1e3a8a !important; color: #dbeafe !important; border-color: #3b82f6 !important; }
-    .notice-warn { background: #78350f !important; color: #fef3c7 !important; border-color: #f59e0b !important; }
     .modal-content { background: #1f2937 !important; }
+    .install-banner { background: #1e3a8a !important; color: #dbeafe !important; }
   }
   .container { max-width: 600px; margin: 0 auto; }
   header {
@@ -41,7 +44,39 @@
     margin-bottom: 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
-  /* 注意書きスタイル */
+  /* インストールバナー */
+  .install-banner {
+    display: none;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  }
+  .install-banner.show { display: flex; }
+  .install-banner-icon { font-size: 1.8rem; flex-shrink: 0; }
+  .install-banner-text { flex: 1; font-size: 0.9rem; line-height: 1.4; }
+  .install-banner-text strong { display: block; margin-bottom: 2px; }
+  .install-banner-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .install-banner button {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    background: #fff;
+    color: #1d4ed8;
+  }
+  .install-banner button:hover { background: #e0e7ff; }
+  .install-banner button.dismiss {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.5);
+    padding: 8px 10px;
+  }
+  .install-banner button.dismiss:hover { background: rgba(255,255,255,0.1); }
+  /* 注意書き */
   .notice {
     background: #eff6ff;
     color: #1e40af;
@@ -53,11 +88,6 @@
     line-height: 1.5;
   }
   .notice strong { display: block; margin-bottom: 4px; }
-  .notice-warn {
-    background: #fffbeb;
-    color: #78350f;
-    border-left-color: #f59e0b;
-  }
   .notice-inline {
     font-size: 0.8rem;
     color: #6b7280;
@@ -71,7 +101,7 @@
     .notice-inline { background: #374151 !important; color: #d1d5db !important; }
   }
   label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
-  input, select {
+  input, select, textarea {
     width: 100%;
     padding: 12px;
     font-size: 1rem;
@@ -79,8 +109,9 @@
     border-radius: 8px;
     background: #fff;
     margin-bottom: 12px;
+    font-family: inherit;
   }
-  input:focus, select:focus { outline: 2px solid #2563eb; border-color: #2563eb; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #2563eb; border-color: #2563eb; }
   button {
     width: 100%;
     padding: 12px;
@@ -97,6 +128,8 @@
   button.secondary { background: #6b7280; }
   button.secondary:hover { background: #4b5563; }
   button.danger { background: #dc2626; padding: 6px 10px; font-size: 0.8rem; width: auto; }
+  button.edit { background: #10b981; padding: 6px 10px; font-size: 0.8rem; width: auto; }
+  button.edit:hover { background: #059669; }
   .detected {
     font-size: 0.85rem;
     padding: 8px 12px;
@@ -133,8 +166,8 @@
     color: #fff;
     margin-right: 6px;
   }
-  .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
-  .item-actions button { padding: 6px 10px; font-size: 0.8rem; width: auto; }
+  .item-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+  .item-actions button { padding: 6px 10px; font-size: 0.8rem; width: 60px; }
   .empty { text-align: center; color: #9ca3af; padding: 24px 0; font-size: 0.9rem; }
   .muted { color: #6b7280; font-size: 0.8rem; }
   footer {
@@ -155,7 +188,7 @@
   }
   footer ul { margin-left: 18px; margin-bottom: 8px; }
   footer li { margin-bottom: 2px; }
-  /* モーダル */
+  /* モーダル共通 */
   .modal-overlay {
     display: none;
     position: fixed;
@@ -173,13 +206,39 @@
     padding: 24px;
     max-width: 480px;
     width: 100%;
-    max-height: 80vh;
+    max-height: 85vh;
     overflow-y: auto;
   }
   .modal-content h2 { margin-bottom: 12px; }
   .modal-content p { font-size: 0.9rem; margin-bottom: 12px; line-height: 1.6; }
   .modal-content ul { margin-left: 18px; margin-bottom: 12px; font-size: 0.9rem; }
   .modal-content li { margin-bottom: 4px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .modal-actions button { flex: 1; }
+  /* iOSインストール手順用 */
+  .ios-step {
+    background: #f3f4f6;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .ios-step { background: #374151; }
+  }
+  .ios-step-num {
+    background: #2563eb;
+    color: #fff;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -189,12 +248,24 @@
     <p>追跡番号から各運送会社の追跡ページを開きます</p>
   </header>
 
+  <!-- インストールバナー -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-banner-icon">📲</div>
+    <div class="install-banner-text">
+      <strong>ホーム画面に追加</strong>
+      アプリのように使えるようになります
+    </div>
+    <div class="install-banner-actions">
+      <button onclick="installApp()">追加</button>
+      <button class="dismiss" onclick="dismissInstall()">×</button>
+    </div>
+  </div>
+
   <!-- 全体の注意書き -->
   <div class="notice">
     <strong>ℹ️ このアプリについて</strong>
     追跡ボタンを押すと、各運送会社の<strong>公式追跡ページが新しいタブで開きます</strong>。
     配送状況の最新情報は各社の公式サイトでご確認ください。
-    本アプリは公式の追跡ページへのリンクを生成するツールです。
   </div>
 
   <div class="card">
@@ -230,7 +301,7 @@
       <button class="danger" onclick="clearHistory()" id="clearBtn" style="display:none;">全削除</button>
     </div>
     <div class="notice-inline" id="historyNotice" style="display:none;">
-      「追跡」ボタンで運送会社の公式サイトを再度開きます
+      「追跡」で公式サイトを再表示／「編集」で名前を変更できます
     </div>
     <div id="history"></div>
   </div>
@@ -249,12 +320,87 @@
       <li>日本郵便 / ヤマト運輸 / 佐川急便 / 西濃運輸 / 福山通運 / EMS（国際郵便）</li>
     </ul>
     <p style="margin-top:12px; text-align:center;">
-      <a href="#" onclick="showAbout(); return false;" style="color:#2563eb;">このアプリについて詳しく</a>
+      <a href="#" onclick="showInstallGuide(); return false;" style="color:#2563eb;">📲 ホーム画面に追加する方法</a>
+      &nbsp;｜&nbsp;
+      <a href="#" onclick="showAbout(); return false;" style="color:#2563eb;">このアプリについて</a>
     </p>
   </footer>
 </div>
 
-<!-- 初回起動・詳細説明モーダル -->
+<!-- 編集モーダル -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-content">
+    <h2>✏️ 荷物名を編集</h2>
+    <label for="editName">荷物名</label>
+    <input type="text" id="editName" placeholder="荷物名を入力">
+    <div class="muted" id="editTarget" style="margin-bottom:12px;"></div>
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeEdit()">キャンセル</button>
+      <button onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- インストール手順モーダル -->
+<div class="modal-overlay" id="installGuideModal">
+  <div class="modal-content">
+    <h2>📲 ホーム画面に追加する方法</h2>
+    <p id="installAuto" style="display:none;">
+      お使いのブラウザでは、下のボタンから直接インストールできます。
+    </p>
+    <button id="installAutoBtn" onclick="installApp()" style="display:none; margin-bottom:16px;">
+      今すぐインストール
+    </button>
+
+    <div id="iosGuide" style="display:none;">
+      <p><strong>iPhone / iPad（Safari）の場合</strong></p>
+      <div class="ios-step">
+        <div class="ios-step-num">1</div>
+        <div>画面下の <strong>共有ボタン（□↑）</strong> をタップ</div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">2</div>
+        <div>メニューから <strong>「ホーム画面に追加」</strong> を選択</div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">3</div>
+        <div>右上の <strong>「追加」</strong> をタップして完了</div>
+      </div>
+    </div>
+
+    <div id="androidGuide" style="display:none;">
+      <p><strong>Android（Chrome）の場合</strong></p>
+      <div class="ios-step">
+        <div class="ios-step-num">1</div>
+        <div>画面右上の <strong>メニュー（︙）</strong> をタップ</div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">2</div>
+        <div><strong>「ホーム画面に追加」</strong> または <strong>「アプリをインストール」</strong> を選択</div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">3</div>
+        <div>確認画面で <strong>「追加」「インストール」</strong> をタップ</div>
+      </div>
+    </div>
+
+    <div id="pcGuide" style="display:none;">
+      <p><strong>PC（Chrome / Edge）の場合</strong></p>
+      <div class="ios-step">
+        <div class="ios-step-num">1</div>
+        <div>アドレスバー右側の <strong>インストールアイコン（⊕）</strong> をクリック</div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">2</div>
+        <div><strong>「インストール」</strong> をクリックして完了</div>
+      </div>
+    </div>
+
+    <button onclick="closeInstallGuide()" style="margin-top:8px;">閉じる</button>
+  </div>
+</div>
+
+<!-- 詳細説明モーダル -->
 <div class="modal-overlay" id="aboutModal">
   <div class="modal-content">
     <h2>📦 荷物追跡アプリへようこそ</h2>
@@ -265,7 +411,7 @@
       <li>追跡番号を入力（業者は自動判定されます）</li>
       <li>「追跡する」ボタンをタップ</li>
       <li>各運送会社の公式サイトが新しいタブで開きます</li>
-      <li>入力した番号は履歴に保存されるので、後から再表示できます</li>
+      <li>履歴の「編集」ボタンで荷物名を後から変更できます</li>
     </ul>
 
     <h3 style="font-size:0.95rem; margin-bottom:6px; margin-top:12px;">大事なお知らせ</h3>
@@ -282,33 +428,15 @@
 <script>
 // ===== 配送業者の追跡URL定義 =====
 const CARRIERS = {
-  japanpost: {
-    name: '日本郵便',
-    url: no => `https://trackings.post.japanpost.jp/services/srv/search/direct?locale=ja&reqCodeNo1=${encodeURIComponent(no)}`
-  },
-  yamato: {
-    name: 'ヤマト運輸',
-    url: no => `https://toi.kuronekoyamato.co.jp/cgi-bin/tneko?init=yes&number00=1&number01=${encodeURIComponent(no)}`
-  },
-  sagawa: {
-    name: '佐川急便',
-    url: no => `https://k2k.sagawa-exp.co.jp/p/web/okurijosearch.do?okurijoNo=${encodeURIComponent(no)}`
-  },
-  seino: {
-    name: '西濃運輸',
-    url: no => `https://track.seino.co.jp/kamotsu/GempyoNoShokai.do?GNO=${encodeURIComponent(no)}`
-  },
-  fukutsu: {
-    name: '福山通運',
-    url: no => `https://corp.fukutsu.co.jp/situation/tracking_no_hunt/${encodeURIComponent(no)}`
-  },
-  ems: {
-    name: 'EMS・国際郵便',
-    url: no => `https://trackings.post.japanpost.jp/services/srv/search/direct?locale=ja&reqCodeNo1=${encodeURIComponent(no)}`
-  }
+  japanpost: { name: '日本郵便',     url: no => `https://trackings.post.japanpost.jp/services/srv/search/direct?locale=ja&reqCodeNo1=${encodeURIComponent(no)}` },
+  yamato:    { name: 'ヤマト運輸',   url: no => `https://toi.kuronekoyamato.co.jp/cgi-bin/tneko?init=yes&number00=1&number01=${encodeURIComponent(no)}` },
+  sagawa:    { name: '佐川急便',     url: no => `https://k2k.sagawa-exp.co.jp/p/web/okurijosearch.do?okurijoNo=${encodeURIComponent(no)}` },
+  seino:     { name: '西濃運輸',     url: no => `https://track.seino.co.jp/kamotsu/GempyoNoShokai.do?GNO=${encodeURIComponent(no)}` },
+  fukutsu:   { name: '福山通運',     url: no => `https://corp.fukutsu.co.jp/situation/tracking_no_hunt/${encodeURIComponent(no)}` },
+  ems:       { name: 'EMS・国際郵便', url: no => `https://trackings.post.japanpost.jp/services/srv/search/direct?locale=ja&reqCodeNo1=${encodeURIComponent(no)}` }
 };
 
-// ===== 追跡番号から業者を自動判定 =====
+// ===== 自動判定 =====
 function detectCarrier(no) {
   const s = no.replace(/[\s-]/g, '').toUpperCase();
   if (/^[A-Z]{2}\d{9}[A-Z]{2}$/.test(s)) return 'ems';
@@ -319,23 +447,16 @@ function detectCarrier(no) {
   return null;
 }
 
-// ===== 入力時に自動判定を表示 =====
 const trackInput = document.getElementById('trackNo');
 const detectedDiv = document.getElementById('detected');
 trackInput.addEventListener('input', () => {
   const no = trackInput.value.trim();
-  if (!no) {
-    detectedDiv.classList.remove('show');
-    return;
-  }
+  if (!no) { detectedDiv.classList.remove('show'); return; }
   const c = detectCarrier(no);
-  if (c) {
-    detectedDiv.textContent = `🔍 自動判定: ${CARRIERS[c].name}`;
-    detectedDiv.classList.add('show');
-  } else {
-    detectedDiv.textContent = '⚠️ 自動判定できません。業者を選択してください';
-    detectedDiv.classList.add('show');
-  }
+  detectedDiv.textContent = c
+    ? `🔍 自動判定: ${CARRIERS[c].name}`
+    : '⚠️ 自動判定できません。業者を選択してください';
+  detectedDiv.classList.add('show');
 });
 
 // ===== 追跡実行 =====
@@ -344,10 +465,7 @@ function track() {
   let carrier = document.getElementById('carrier').value;
   const memo = document.getElementById('memo').value.trim();
 
-  if (!no) {
-    alert('追跡番号を入力してください');
-    return;
-  }
+  if (!no) { alert('追跡番号を入力してください'); return; }
 
   if (carrier === 'auto') {
     carrier = detectCarrier(no);
@@ -358,9 +476,7 @@ function track() {
   }
 
   saveHistory({ no, carrier, memo, date: new Date().toISOString() });
-
-  const url = CARRIERS[carrier].url(no);
-  window.open(url, '_blank', 'noopener');
+  window.open(CARRIERS[carrier].url(no), '_blank', 'noopener');
 
   document.getElementById('trackNo').value = '';
   document.getElementById('memo').value = '';
@@ -369,23 +485,22 @@ function track() {
   renderHistory();
 }
 
-// ===== 履歴管理（localStorage） =====
+// ===== 履歴管理 =====
 const STORAGE_KEY = 'tracking_history_v1';
 
 function loadHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
 }
 
 function saveHistory(item) {
-  const list = loadHistory();
-  const filtered = list.filter(x => x.no !== item.no);
-  filtered.unshift(item);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered.slice(0, 50)));
+  const list = loadHistory().filter(x => x.no !== item.no);
+  list.unshift(item);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, 50)));
 }
 
 function deleteHistory(no) {
+  if (!confirm('この履歴を削除しますか？')) return;
   const list = loadHistory().filter(x => x.no !== no);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   renderHistory();
@@ -398,9 +513,45 @@ function clearHistory() {
 }
 
 function reopenTrack(no, carrier) {
-  const url = CARRIERS[carrier].url(no);
-  window.open(url, '_blank', 'noopener');
+  window.open(CARRIERS[carrier].url(no), '_blank', 'noopener');
 }
+
+// ===== 編集機能 =====
+let editingNo = null;
+
+function openEdit(no) {
+  const item = loadHistory().find(x => x.no === no);
+  if (!item) return;
+  editingNo = no;
+  document.getElementById('editName').value = item.memo || '';
+  const carrierName = CARRIERS[item.carrier]?.name || '不明';
+  document.getElementById('editTarget').textContent = `${carrierName}：${no}`;
+  document.getElementById('editModal').classList.add('show');
+  setTimeout(() => document.getElementById('editName').focus(), 100);
+}
+
+function closeEdit() {
+  document.getElementById('editModal').classList.remove('show');
+  editingNo = null;
+}
+
+function saveEdit() {
+  if (!editingNo) return;
+  const newName = document.getElementById('editName').value.trim();
+  const list = loadHistory();
+  const idx = list.findIndex(x => x.no === editingNo);
+  if (idx >= 0) {
+    list[idx].memo = newName;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+  closeEdit();
+  renderHistory();
+}
+
+// Enterキーで保存
+document.getElementById('editName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveEdit();
+});
 
 function escapeHtml(s) {
   return String(s).replace(/[<>&"']/g, c =>
@@ -441,6 +592,7 @@ function renderHistory() {
         </div>
         <div class="item-actions">
           <button onclick="reopenTrack('${safeNo}','${item.carrier}')">追跡</button>
+          <button class="edit" onclick="openEdit('${safeNo}')">編集</button>
           <button class="danger" onclick="deleteHistory('${safeNo}')">削除</button>
         </div>
       </div>
@@ -448,7 +600,103 @@ function renderHistory() {
   }).join('');
 }
 
-// ===== 初回起動時の説明モーダル =====
+// ===== PWAインストール機能 =====
+let deferredPrompt = null;
+const INSTALL_DISMISSED_KEY = 'install_banner_dismissed_v1';
+
+// すでにインストール済みかチェック
+function isAppInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+}
+
+// インストール可能イベントを捕捉（Android Chrome / PC Chrome / Edge等）
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // バナーを表示（一度閉じられていなければ）
+  if (!localStorage.getItem(INSTALL_DISMISSED_KEY) && !isAppInstalled()) {
+    document.getElementById('installBanner').classList.add('show');
+  }
+});
+
+// インストール完了時
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  deferredPrompt = null;
+});
+
+async function installApp() {
+  if (deferredPrompt) {
+    // ネイティブのインストールダイアログを表示
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('installBanner').classList.remove('show');
+    if (result.outcome === 'accepted') {
+      closeInstallGuide();
+    }
+  } else {
+    // ダイアログが使えない場合は手順を案内
+    showInstallGuide();
+  }
+}
+
+function dismissInstall() {
+  localStorage.setItem(INSTALL_DISMISSED_KEY, '1');
+  document.getElementById('installBanner').classList.remove('show');
+}
+
+function showInstallGuide() {
+  // 環境を判定して表示する手順を切り替え
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+
+  document.getElementById('iosGuide').style.display = 'none';
+  document.getElementById('androidGuide').style.display = 'none';
+  document.getElementById('pcGuide').style.display = 'none';
+  document.getElementById('installAuto').style.display = 'none';
+  document.getElementById('installAutoBtn').style.display = 'none';
+
+  if (deferredPrompt) {
+    document.getElementById('installAuto').style.display = 'block';
+    document.getElementById('installAutoBtn').style.display = 'block';
+  }
+
+  if (isIOS) {
+    document.getElementById('iosGuide').style.display = 'block';
+  } else if (isAndroid) {
+    document.getElementById('androidGuide').style.display = 'block';
+  } else {
+    document.getElementById('pcGuide').style.display = 'block';
+  }
+
+  // インストール済みなら別メッセージ
+  if (isAppInstalled()) {
+    alert('このアプリはすでにホーム画面に追加されています。');
+    return;
+  }
+
+  document.getElementById('installGuideModal').classList.add('show');
+}
+
+function closeInstallGuide() {
+  document.getElementById('installGuideModal').classList.remove('show');
+}
+
+// iOS Safari は beforeinstallprompt が発火しないので、初回訪問時にバナーを出す
+function checkIOSInstall() {
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isSafari = /safari/.test(ua) && !/crios|fxios/.test(ua);
+  if (isIOS && isSafari && !isAppInstalled() && !localStorage.getItem(INSTALL_DISMISSED_KEY)) {
+    document.getElementById('installBanner').classList.add('show');
+    // iOSはinstallApp()でガイドを表示する形に切り替え
+  }
+}
+
+// ===== ウェルカムモーダル =====
 const ABOUT_KEY = 'tracking_about_shown_v1';
 
 function showAbout() {
@@ -460,14 +708,14 @@ function closeAbout() {
   localStorage.setItem(ABOUT_KEY, '1');
 }
 
-// 初回起動時のみ自動表示
 if (!localStorage.getItem(ABOUT_KEY)) {
   setTimeout(showAbout, 300);
 }
 
+// ===== 起動処理 =====
 renderHistory();
+checkIOSInstall();
 
-// ===== PWA Service Worker =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
