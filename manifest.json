@@ -1,13 +1,13 @@
 {
   "name": "荷物追跡アプリ",
   "short_name": "荷物追跡",
-  "description": "日本郵便・ヤマト・佐川などの追跡番号をまとめて管理",
+  "description": "公式追跡サイトと荷物管理",
+  "id": "./index.html",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f3f4f6",
-  "theme_color": "#2563eb",
-  "orientation": "portrait",
+  "background_color": "#f3f6f4",
+  "theme_color": "#173d47",
   "icons": [
     {
       "src": "icon-192.svg",

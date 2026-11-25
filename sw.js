@@ -1,30 +1,4 @@
-const CACHE = 'tracking-app-v3';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.svg',
-  './icon-512.svg',
-  './icon-maskable.svg'
-];
-
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./index.html')))
-  );
-});
+const CACHE='tracking-app-v2-20261125';const ASSETS=['./','./index.html','./style-v2.css','./app-v2.mjs','./core-v2.mjs','./manifest.json','./icon-192.svg','./icon-512.svg','./icon-maskable.svg'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()))});
+self.addEventListener('activate',e=>{e.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('tracking-app-')&&k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim()})())});
+self.addEventListener('fetch',e=>{const r=e.request,u=new URL(r.url);if(r.method!=='GET'||u.origin!==self.location.origin||!u.href.startsWith(self.registration.scope))return;if(u.pathname.endsWith('/release.json')){e.respondWith(fetch(r,{cache:'no-store'}));return}if(r.mode==='navigate'){e.respondWith(fetch(r,{cache:'no-store'}).catch(async()=>await caches.match('./index.html')||Response.error()));return}if(!ASSETS.some(p=>new URL(p,self.registration.scope).href===u.href))return;e.respondWith(caches.open(CACHE).then(async c=>await c.match(r)||fetch(r)))});
